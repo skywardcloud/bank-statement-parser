@@ -1,9 +1,8 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Body
 from fastapi.middleware.cors import CORSMiddleware
-import pandas as pd
 import shutil
 import os
-from parser import parse_csv, validate_balance
+from backend.parser import parse_csv, validate_balance
 
 app = FastAPI()
 
@@ -16,7 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = "../data"
+# Directory where uploaded files are stored relative to this file
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -35,10 +35,8 @@ async def upload_file(file: UploadFile = File(...)):
     }
 
 @app.post("/parse")
-async def parse_and_validate(filename: str):
-    """
-    Parses the uploaded CSV and returns transaction data + validation
-    """
+async def parse_and_validate(filename: str = Body(..., embed=True)):
+    """Parse an uploaded CSV and validate its balances."""
     filepath = os.path.join(UPLOAD_DIR, filename)
 
     # Step 1: Parse CSV
