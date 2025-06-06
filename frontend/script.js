@@ -5,20 +5,28 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   const formData = new FormData();
   formData.append("file", fileInput.files[0]);
 
-  const response = await fetch("http://localhost:8000/upload", {
+  // Step 1: upload the file
+  const uploadRes = await fetch("http://localhost:8000/upload", {
     method: "POST",
     body: formData,
   });
+  const uploadResult = await uploadRes.json();
 
-  const result = await response.json();
+  // Step 2: request parsing and validation
+  const parseRes = await fetch("http://localhost:8000/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: uploadResult.filename }),
+  });
+  const parsed = await parseRes.json();
 
-  displayValidation(result.validation_status);
-  displayTable(result.data);
+  displayValidation(parsed.validation.is_valid);
+  displayTable(parsed.transactions);
 });
 
-function displayValidation(status) {
+function displayValidation(isValid) {
   const el = document.getElementById("validationResult");
-  el.textContent = status === "valid" ? "✅ All balances verified." : "❌ Discrepancy found!";
+  el.textContent = isValid ? "✅ All balances verified." : "❌ Discrepancy found!";
 }
 
 function displayTable(data) {
@@ -26,11 +34,11 @@ function displayTable(data) {
   let html = "<table><tr><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr>";
   data.forEach(row => {
     html += `<tr>
-      <td>${row.Date}</td>
-      <td>${row.Description}</td>
-      <td>${row.Debit}</td>
-      <td>${row.Credit}</td>
-      <td>${row.Balance}</td>
+      <td>${row.date}</td>
+      <td>${row.description}</td>
+      <td>${row.debit}</td>
+      <td>${row.credit}</td>
+      <td>${row.balance}</td>
     </tr>`;
   });
   html += "</table>";
